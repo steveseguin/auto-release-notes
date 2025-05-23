@@ -5,72 +5,369 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Commit Summary</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background: #f5f5f5;
+            background: #0d1117;
+            color: #c9d1d9;
         }
         .container {
-            background: white;
+            background: #161b22;
             padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1 svg {
+            width: 32px;
+            height: 32px;
+        }
+        h2 {
+            color: #58a6ff;
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .control-group {
+            background: #0d1117;
+            padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #30363d;
         }
-        /* Remove this */
-        /*
-        input, button {
-            padding: 10px;
-            margin: 5px;
-            font-size: 16px;
+        .control-group label {
+            display: block;
+            color: #8b949e;
+            font-size: 13px;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
-        input {
-            width: 300px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+        }
+        input[type="number"] {
+            width: 100px;
+        }
+        input[type="password"] {
+            font-family: monospace;
         }
         button {
-            background: #0366d6;
+            padding: 8px 16px;
+            background: #238636;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
         button:hover {
-            background: #0256c7;
+            background: #2ea043;
+            transform: translateY(-1px);
         }
-        */
+        button:active {
+            transform: translateY(0);
+        }
+        button.secondary {
+            background: #21262d;
+            border: 1px solid #30363d;
+        }
+        button.secondary:hover {
+            background: #30363d;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #repo-info {
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #30363d;
+            font-size: 14px;
+            color: #8b949e;
+        }
+        #error {
+            color: #f85149;
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(248, 81, 73, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(248, 81, 73, 0.3);
+            display: none;
+        }
         #output {
             margin-top: 20px;
             padding: 20px;
-            background: #f8f8f8;
-            border-radius: 4px;
+            background: #0d1117;
+            border-radius: 8px;
+            border: 1px solid #30363d;
             white-space: pre-wrap;
-            font-family: monospace;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
             display: none;
+            position: relative;
+            max-height: 600px;
+            overflow-y: auto;
         }
-        .error {
-            color: #d73a49;
+        #output.visible {
+            display: block;
+        }
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #1f6feb;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 2px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .tag:hover {
+            opacity: 0.8;
+        }
+        .filter-tags {
             margin-top: 10px;
         }
-        .info {
-            color: #666;
-            margin: 10px 0;
-            font-size: 14px;
+        .ai-summary {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        .ai-summary.visible {
+            display: block;
+        }
+        .ai-summary h3 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ai-summary-content {
+            background: #161b22;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            white-space: pre-wrap;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #30363d;
+            border-radius: 50%;
+            border-top-color: #58a6ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            font-size: 13px;
+            color: #8b949e;
+        }
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .collapsed {
+            display: none;
+        }
+        .toggle-settings {
+            margin-bottom: 15px;
+        }
+        pre {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>GitHub Commit Summary</h1>
-        <div id="repo-info" class="info"></div>
-        <div id="error" class="error"></div>
-        <div id="output"></div>
+        <h1>
+            <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+            </svg>
+            GitHub Commit Summary
+        </h1>
+        <div id="repo-info"></div>
+        <div id="error"></div>
+        
+        <button class="secondary toggle-settings" onclick="toggleSettings()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7.429 1.525a6.593 6.593 0 011.142 0c.036.003.108.036.137.146l.289 1.105c.147.56.55.967.997 1.189.174.086.341.183.501.29.417.278.97.423 1.53.27l1.102-.303c.11-.03.175.016.195.046.219.31.41.641.573.989.014.031.022.11-.059.19l-.815.806c-.411.406-.562.957-.53 1.456a4.588 4.588 0 010 .582c-.032.499.119 1.05.53 1.456l.815.806c.08.08.073.159.059.19a6.494 6.494 0 01-.573.99c-.02.029-.086.074-.195.045l-1.103-.303c-.559-.153-1.112-.008-1.529.27-.16.107-.327.204-.5.29-.449.222-.851.628-.998 1.189l-.289 1.105c-.029.11-.101.143-.137.146a6.613 6.613 0 01-1.142 0c-.036-.003-.108-.037-.137-.146l-.289-1.105c-.147-.56-.55-.967-.997-1.189a4.502 4.502 0 01-.501-.29c-.417-.278-.97-.423-1.53-.27l-1.102.303c-.11.03-.175-.016-.195-.046a6.492 6.492 0 01-.573-.989c-.014-.031-.022-.11.059-.19l.815-.806c.411-.406.562-.957.53-1.456a4.587 4.587 0 010-.582c.032-.499-.119-1.05-.53-1.456l-.815-.806c-.08-.08-.073-.159-.059-.19a6.44 6.44 0 01.573-.99c.02-.029.086-.075.195-.045l1.103.303c.559.153 1.112.008 1.529-.27.16-.107.327-.204.5-.29.449-.222.851-.628.998-1.189l.289-1.105c.029-.11.101-.143.137-.146zM8 0c-.236 0-.47.01-.701.03-.743.065-1.29.615-1.458 1.261l-.29 1.106c-.017.066-.078.158-.211.224a5.994 5.994 0 00-.668.386c-.123.082-.233.09-.3.071L3.27 2.776c-.644-.177-1.392.02-1.82.63a7.977 7.977 0 00-.704 1.217c-.315.675-.111 1.422.363 1.891l.815.806c.05.048.098.147.088.294a6.084 6.084 0 000 .772c.01.147-.038.246-.088.294l-.815.806c-.474.469-.678 1.216-.363 1.891.2.428.436.835.704 1.218.428.609 1.176.806 1.82.63l1.103-.303c.066-.019.176-.011.299.071.213.143.436.272.668.386.133.066.194.158.212.224l.289 1.106c.169.646.715 1.196 1.458 1.26a8.094 8.094 0 001.402 0c.743-.064 1.29-.614 1.458-1.26l.29-1.106c.017-.066.078-.158.211-.224a5.98 5.98 0 00.668-.386c.123-.082.233-.09.3-.071l1.102.302c.644.177 1.392-.02 1.82-.63.268-.382.505-.789.704-1.217.315-.675.111-1.422-.364-1.891l-.814-.806c-.05-.048-.098-.147-.088-.294a6.1 6.1 0 000-.772c-.01-.147.039-.246.088-.294l.814-.806c.475-.469.679-1.216.364-1.891a7.992 7.992 0 00-.704-1.218c-.428-.609-1.176-.806-1.82-.63l-1.103.303c-.066.019-.176.011-.299-.071a5.991 5.991 0 00-.668-.386c-.133-.066-.194-.158-.212-.224L10.16 1.29C9.99.645 9.444.095 8.701.031A8.094 8.094 0 008 0zm1.5 8a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM11 8a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Settings
+        </button>
+        
+        <div id="settings-panel" class="collapsed">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="date-range">Date Range</label>
+                    <select id="date-range" onchange="handleDateRangeChange()">
+                        <option value="7">Last 7 days</option>
+                        <option value="14" selected>Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                        <option value="custom">Custom range</option>
+                    </select>
+                    <input type="number" id="custom-days" placeholder="Days" style="display:none; margin-top:8px;" min="1" max="365">
+                </div>
+                
+                <div class="control-group">
+                    <label for="exclude-users">Exclude Users (comma-separated)</label>
+                    <input type="text" id="exclude-users" placeholder="user1, user2">
+                </div>
+                
+                <div class="control-group">
+                    <label for="exclude-keywords">Exclude Keywords (comma-separated)</label>
+                    <input type="text" id="exclude-keywords" placeholder="WIP, temp, merge">
+                </div>
+                
+                <div class="control-group">
+                    <label for="include-keywords">Include Only Keywords (comma-separated)</label>
+                    <input type="text" id="include-keywords" placeholder="feat, fix, add">
+                </div>
+                
+                <div class="control-group">
+                    <label for="max-tokens">Max Output Length (approx. tokens)</label>
+                    <input type="number" id="max-tokens" placeholder="No limit" min="100" max="10000" step="100">
+                </div>
+            </div>
+            
+            <h2>AI Summary Settings</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="google-api-key">Google Cloud API Key</label>
+                    <input type="password" id="google-api-key" placeholder="Enter your API key">
+                </div>
+                
+                <div class="control-group">
+                    <label for="google-model">Model</label>
+                    <select id="google-model">
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="summary-style">Summary Style</label>
+                    <select id="summary-style" onchange="handleSummaryStyleChange()">
+                        <option value="release-notes">Release Notes (Markdown)</option>
+                        <option value="changelog">Changelog (Detailed)</option>
+                        <option value="executive">Executive Summary</option>
+                        <option value="technical">Technical Summary</option>
+                        <option value="custom">Custom Prompt</option>
+                    </select>
+                    <textarea id="custom-prompt" placeholder="Enter custom prompt..." style="display:none; margin-top:8px;" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="fetchCommits()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zM8 0a8 8 0 100 16A8 8 0 008 0zm2.83 5.28a.75.75 0 00-1.06-1.06l-4.5 4.5a.75.75 0 101.06 1.06l4.5-4.5z"></path>
+                </svg>
+                Fetch Commits
+            </button>
+            <button class="secondary" onclick="generateAISummary()" id="ai-summary-btn" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0a8 8 0 110 16A8 8 0 018 0zM1.5 8a6.5 6.5 0 1013 0 6.5 6.5 0 00-13 0zm9.78-2.22l-5.5 5.5a.75.75 0 01-1.06 0l-2.5-2.5a.75.75 0 111.06-1.06L5.5 9.94l4.97-4.97a.75.75 0 111.06 1.06z"></path>
+                </svg>
+                Generate AI Summary
+            </button>
+        </div>
+        
+        <div id="output">
+            <button class="copy-button" onclick="copyToClipboard()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path>
+                    <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path>
+                </svg>
+                Copy
+            </button>
+            <div id="output-content"></div>
+        </div>
+        
+        <div class="ai-summary" id="ai-summary">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0a8 8 0 110 16A8 8 0 018 0zM1.5 8a6.5 6.5 0 1013 0 6.5 6.5 0 00-13 0zm9.78-2.22l-5.5 5.5a.75.75 0 01-1.06 0l-2.5-2.5a.75.75 0 111.06-1.06L5.5 9.94l4.97-4.97a.75.75 0 111.06 1.06z"></path>
+                </svg>
+                AI Generated Summary
+            </h3>
+            <div class="ai-summary-content" id="ai-summary-content"></div>
+            <button class="copy-button" onclick="copyAISummary()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path>
+                    <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path>
+                </svg>
+                Copy Summary
+            </button>
+        </div>
         
         <h2>Command Line Method</h2>
-        <pre style="background: #f8f8f8; padding: 15px; border-radius: 4px; overflow-x: auto;">
-# Get commits from last 2 weeks with formatting
+        <pre># Get commits from specified date range
 git log --since="2 weeks ago" --pretty=format:"- %s%n  %b" | grep -v "^$"
 
 # Alternative with more details
@@ -85,154 +382,161 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
     }
     print "- " $2
     if ($3) print "  " $3
-}'
-        </pre>
+}'</pre>
     </div>
 
     <script>
-        // Replace this entire script block
-        /*
-        async function fetchCommits() {
-            const owner = document.getElementById('owner').value;
-            const repo = document.getElementById('repo').value;
-            const token = document.getElementById('token').value;
-            const errorDiv = document.getElementById('error');
-            const outputDiv = document.getElementById('output');
-            
-            errorDiv.textContent = '';
-            outputDiv.style.display = 'none';
-            
-            if (!owner || !repo) {
-                errorDiv.textContent = 'Please enter both owner and repository name';
-                return;
-            }
-            
-            const twoWeeksAgo = new Date();
-            twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-            const since = twoWeeksAgo.toISOString();
-            
-            const headers = {
-                'Accept': 'application/vnd.github.v3+json'
-            };
-            
-            if (token) {
-                headers['Authorization'] = `token ${token}`;
-            }
-            
-            try {
-                const response = await fetch(
-                    `https://api.github.com/repos/${owner}/${repo}/commits?since=${since}&per_page=100`,
-                    { headers }
-                );
+        // Load settings from localStorage
+        function loadSettings() {
+            const settings = localStorage.getItem('gitnfo-settings');
+            if (settings) {
+                const parsed = JSON.parse(settings);
+                document.getElementById('date-range').value = parsed.dateRange || '14';
+                document.getElementById('custom-days').value = parsed.customDays || '';
+                document.getElementById('exclude-users').value = parsed.excludeUsers || '';
+                document.getElementById('exclude-keywords').value = parsed.excludeKeywords || '';
+                document.getElementById('include-keywords').value = parsed.includeKeywords || '';
+                document.getElementById('max-tokens').value = parsed.maxTokens || '';
+                document.getElementById('google-api-key').value = parsed.googleApiKey || '';
+                document.getElementById('google-model').value = parsed.googleModel || 'gemini-1.5-flash';
+                document.getElementById('summary-style').value = parsed.summaryStyle || 'release-notes';
+                document.getElementById('custom-prompt').value = parsed.customPrompt || '';
                 
-                if (!response.ok) {
-                    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-                }
-                
-                const commits = await response.json();
-                
-                if (commits.length === 0) {
-                    outputDiv.textContent = 'No commits found in the last 2 weeks';
-                    outputDiv.style.display = 'block';
-                    return;
-                }
-                
-                const summary = formatCommitSummary(commits);
-                outputDiv.textContent = summary;
-                outputDiv.style.display = 'block';
-                
-            } catch (error) {
-                errorDiv.textContent = `Error: ${error.message}`;
+                handleDateRangeChange();
+                handleSummaryStyleChange();
             }
         }
-        
-        function formatCommitSummary(commits) {
-            const features = [];
-            const fixes = [];
-            const other = [];
-            
-            commits.forEach(commit => {
-                const message = commit.commit.message;
-                const firstLine = message.split('\n')[0];
-                const body = message.split('\n').slice(1).join('\n').trim();
-                
-                const entry = body ? `- ${firstLine}\n  ${body.replace(/\n/g, '\n  ')}` : `- ${firstLine}`;
-                
-                if (firstLine.toLowerCase().match(/^(feat|feature|add)/)) {
-                    features.push(entry);
-                } else if (firstLine.toLowerCase().match(/^(fix|bugfix|patch)/)) {
-                    fixes.push(entry);
-                } else {
-                    other.push(entry);
-                }
-            });
-            
-            let output = `# Updates from the last 2 weeks (${commits.length} commits)\n\n`;
-            
-            if (features.length > 0) {
-                output += `## New Features\n${features.join('\n')}\n\n`;
-            }
-            
-            if (fixes.length > 0) {
-                output += `## Bug Fixes\n${fixes.join('\n')}\n\n`;
-            }
-            
-            if (other.length > 0) {
-                output += `## Other Changes\n${other.join('\n')}\n\n`;
-            }
-            
-            output += `\n## Summary by Author\n`;
-            const byAuthor = {};
-            commits.forEach(commit => {
-                const author = commit.commit.author.name;
-                if (!byAuthor[author]) byAuthor[author] = 0;
-                byAuthor[author]++;
-            });
-            
-            Object.entries(byAuthor)
-                .sort((a, b) => b[1] - a[1])
-                .forEach(([author, count]) => {
-                    output += `- ${author}: ${count} commits\n`;
-                });
-            
-            return output;
-        }
-        */
-        // End Replace
 
-        // Add this here
-        (async () => {
+        // Save settings to localStorage
+        function saveSettings() {
+            const settings = {
+                dateRange: document.getElementById('date-range').value,
+                customDays: document.getElementById('custom-days').value,
+                excludeUsers: document.getElementById('exclude-users').value,
+                excludeKeywords: document.getElementById('exclude-keywords').value,
+                includeKeywords: document.getElementById('include-keywords').value,
+                maxTokens: document.getElementById('max-tokens').value,
+                googleApiKey: document.getElementById('google-api-key').value,
+                googleModel: document.getElementById('google-model').value,
+                summaryStyle: document.getElementById('summary-style').value,
+                customPrompt: document.getElementById('custom-prompt').value
+            };
+            localStorage.setItem('gitnfo-settings', JSON.stringify(settings));
+        }
+
+        // Add event listeners to save settings on change
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('change', saveSettings);
+        });
+
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.classList.toggle('collapsed');
+        }
+
+        function handleDateRangeChange() {
+            const range = document.getElementById('date-range').value;
+            const customDays = document.getElementById('custom-days');
+            customDays.style.display = range === 'custom' ? 'block' : 'none';
+        }
+
+        function handleSummaryStyleChange() {
+            const style = document.getElementById('summary-style').value;
+            const customPrompt = document.getElementById('custom-prompt');
+            customPrompt.style.display = style === 'custom' ? 'block' : 'none';
+        }
+
+        function getDaysAgo() {
+            const range = document.getElementById('date-range').value;
+            if (range === 'custom') {
+                return parseInt(document.getElementById('custom-days').value) || 14;
+            }
+            return parseInt(range);
+        }
+
+        function copyToClipboard() {
+            const content = document.getElementById('output-content').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = document.querySelector('#output .copy-button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg> Copied!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            });
+        }
+
+        function copyAISummary() {
+            const content = document.getElementById('ai-summary-content').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = document.querySelector('#ai-summary .copy-button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg> Copied!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            });
+        }
+
+        function shouldExcludeCommit(commit) {
+            const excludeUsers = document.getElementById('exclude-users').value
+                .split(',').map(u => u.trim()).filter(u => u);
+            const excludeKeywords = document.getElementById('exclude-keywords').value
+                .split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+            const includeKeywords = document.getElementById('include-keywords').value
+                .split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+            
+            const author = commit.commit.author.name;
+            const message = commit.commit.message.toLowerCase();
+            
+            // Check user exclusion
+            if (excludeUsers.includes(author)) return true;
+            
+            // Check keyword exclusion
+            if (excludeKeywords.some(keyword => message.includes(keyword))) return true;
+            
+            // Check keyword inclusion (if specified)
+            if (includeKeywords.length > 0 && !includeKeywords.some(keyword => message.includes(keyword))) return true;
+            
+            return false;
+        }
+
+        function truncateToTokenLimit(text) {
+            const maxTokens = parseInt(document.getElementById('max-tokens').value);
+            if (!maxTokens) return text;
+            
+            // Rough approximation: 1 token ≈ 4 characters
+            const maxChars = maxTokens * 4;
+            if (text.length <= maxChars) return text;
+            
+            return text.substring(0, maxChars) + '\n\n[Output truncated to ~' + maxTokens + ' tokens]';
+        }
+
+        async function fetchCommits() {
             const owner = window.GITNFO_OWNER;
             const repo = window.GITNFO_REPO;
-            const branch = window.GITNFO_BRANCH || 'main'; // Default to 'main' if not provided
+            const branch = window.GITNFO_BRANCH || 'main';
             const errorDiv = document.getElementById('error');
             const outputDiv = document.getElementById('output');
+            const outputContent = document.getElementById('output-content');
             const repoInfoDiv = document.getElementById('repo-info');
             
-            errorDiv.textContent = '';
-            outputDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            outputDiv.classList.remove('visible');
+            document.getElementById('ai-summary').classList.remove('visible');
+            document.getElementById('ai-summary-btn').style.display = 'none';
 
             if (!owner || !repo) {
                 repoInfoDiv.textContent = 'Please navigate to gitnfo.com/owner/repo to view commit history.';
                 return;
             }
 
-            repoInfoDiv.textContent = `Displaying commits for: ${owner}/${repo}${branch !== 'main' ? ` (branch: ${branch})` : ''}`;
+            repoInfoDiv.textContent = `Repository: ${owner}/${repo}${branch !== 'main' ? ` (branch: ${branch})` : ''}`;
             
-            const twoWeeksAgo = new Date();
-            twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-            const since = twoWeeksAgo.toISOString();
+            const daysAgo = getDaysAgo();
+            const sinceDate = new Date();
+            sinceDate.setDate(sinceDate.getDate() - daysAgo);
+            const since = sinceDate.toISOString();
             
             const headers = {
                 'Accept': 'application/vnd.github.v3+json'
             };
-            
-            // You might consider adding a way for users to provide a token for private repos
-            // For now, it's removed as per original prompt context, but kept for future reference
-            // const token = localStorage.getItem('githubToken'); // Example: store token in localStorage
-            // if (token) {
-            //     headers['Authorization'] = `token ${token}`;
-            // }
             
             try {
                 const response = await fetch(
@@ -245,24 +549,35 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                     throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${errorData.message}`);
                 }
                 
-                const commits = await response.json();
+                const allCommits = await response.json();
+                
+                // Filter commits
+                const commits = allCommits.filter(commit => !shouldExcludeCommit(commit));
                 
                 if (commits.length === 0) {
-                    outputDiv.textContent = 'No commits found in the last 2 weeks for this repository/branch.';
-                    outputDiv.style.display = 'block';
+                    outputContent.textContent = `No commits found in the last ${daysAgo} days matching your filters.`;
+                    outputDiv.classList.add('visible');
                     return;
                 }
                 
-                const summary = formatCommitSummary(commits);
-                outputDiv.textContent = summary;
-                outputDiv.style.display = 'block';
+                window.currentCommits = commits; // Store for AI summary
+                
+                const summary = formatCommitSummary(commits, allCommits.length - commits.length);
+                outputContent.textContent = truncateToTokenLimit(summary);
+                outputDiv.classList.add('visible');
+                
+                // Show AI summary button if API key is present
+                if (document.getElementById('google-api-key').value) {
+                    document.getElementById('ai-summary-btn').style.display = 'inline-flex';
+                }
                 
             } catch (error) {
                 errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.style.display = 'block';
             }
-        })(); // Self-invoking function to run on page load
+        }
 
-        function formatCommitSummary(commits) {
+        function formatCommitSummary(commits, filteredCount) {
             const features = [];
             const fixes = [];
             const other = [];
@@ -283,7 +598,8 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 }
             });
             
-            let output = `# Updates from the last 2 weeks (${commits.length} commits)\n\n`;
+            const daysAgo = getDaysAgo();
+            let output = `# Updates from the last ${daysAgo} days (${commits.length} commits${filteredCount > 0 ? ', ' + filteredCount + ' filtered' : ''})\n\n`;
             
             if (features.length > 0) {
                 output += `## New Features\n${features.join('\n')}\n\n`;
@@ -313,7 +629,166 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
             
             return output;
         }
-        // End Add
+
+        async function generateAISummary() {
+            const apiKey = document.getElementById('google-api-key').value;
+            if (!apiKey) {
+                alert('Please enter your Google Cloud API key in settings.');
+                return;
+            }
+            
+            if (!window.currentCommits || window.currentCommits.length === 0) {
+                alert('Please fetch commits first.');
+                return;
+            }
+            
+            const model = document.getElementById('google-model').value;
+            const style = document.getElementById('summary-style').value;
+            const customPrompt = document.getElementById('custom-prompt').value;
+            
+            const aiSummaryDiv = document.getElementById('ai-summary');
+            const aiSummaryContent = document.getElementById('ai-summary-content');
+            const btn = document.getElementById('ai-summary-btn');
+            
+            // Show loading state
+            btn.innerHTML = '<span class="loading"></span> Generating...';
+            btn.disabled = true;
+            aiSummaryContent.textContent = 'Generating summary...';
+            aiSummaryDiv.classList.add('visible');
+            
+            try {
+                const prompt = buildPrompt(style, customPrompt);
+                const commitData = prepareCommitData();
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt + '\n\nCommit data:\n' + commitData
+                            }]
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const summary = data.candidates[0].content.parts[0].text;
+                
+                aiSummaryContent.textContent = summary;
+                
+            } catch (error) {
+                aiSummaryContent.textContent = `Error generating summary: ${error.message}`;
+            } finally {
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 110 16A8 8 0 018 0zM1.5 8a6.5 6.5 0 1013 0 6.5 6.5 0 00-13 0zm9.78-2.22l-5.5 5.5a.75.75 0 01-1.06 0l-2.5-2.5a.75.75 0 111.06-1.06L5.5 9.94l4.97-4.97a.75.75 0 111.06 1.06z"></path></svg> Generate AI Summary';
+                btn.disabled = false;
+            }
+        }
+
+        function buildPrompt(style, customPrompt) {
+            const prompts = {
+                'release-notes': 'Generate professional release notes in markdown format. Group changes by type (Features, Improvements, Bug Fixes, etc). Be concise but informative. Include a brief summary at the top.',
+                'changelog': 'Create a detailed changelog with all changes organized by category. Include technical details where relevant. Format in markdown with clear sections.',
+                'executive': 'Write a brief executive summary highlighting the most important changes and their business impact. Keep it under 200 words. Focus on value delivered.',
+                'technical': 'Provide a technical summary focusing on implementation details, architectural changes, and technical debt addressed. Include relevant technical metrics.',
+                'custom': customPrompt || 'Summarize the commits.'
+            };
+            
+            return prompts[style] || prompts['release-notes'];
+        }
+
+        function prepareCommitData() {
+            const maxTokens = parseInt(document.getElementById('max-tokens').value);
+            let data = window.currentCommits.map(commit => {
+                return `${commit.commit.message}\nAuthor: ${commit.commit.author.name}\nDate: ${commit.commit.author.date}\n---`;
+            }).join('\n');
+            
+            if (maxTokens) {
+                const maxChars = (maxTokens * 4) / 2; // Half for input
+                if (data.length > maxChars) {
+                    data = data.substring(0, maxChars) + '\n[truncated]';
+                }
+            }
+            
+            return data;
+        }
+
+        // Load settings and initialize
+        loadSettings();
+        
+        // Auto-fetch on page load
+        (async () => {
+            const owner = window.GITNFO_OWNER;
+            const repo = window.GITNFO_REPO;
+            const branch = window.GITNFO_BRANCH || 'main';
+            const errorDiv = document.getElementById('error');
+            const outputDiv = document.getElementById('output');
+            const outputContent = document.getElementById('output-content');
+            const repoInfoDiv = document.getElementById('repo-info');
+            
+            errorDiv.style.display = 'none';
+            outputDiv.classList.remove('visible');
+
+            if (!owner || !repo) {
+                repoInfoDiv.textContent = 'Please navigate to gitnfo.com/owner/repo to view commit history.';
+                return;
+            }
+
+            repoInfoDiv.textContent = `Repository: ${owner}/${repo}${branch !== 'main' ? ` (branch: ${branch})` : ''}`;
+            
+            const daysAgo = getDaysAgo();
+            const sinceDate = new Date();
+            sinceDate.setDate(sinceDate.getDate() - daysAgo);
+            const since = sinceDate.toISOString();
+            
+            const headers = {
+                'Accept': 'application/vnd.github.v3+json'
+            };
+            
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${owner}/${repo}/commits?since=${since}&per_page=100&sha=${branch}`,
+                    { headers }
+                );
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${errorData.message}`);
+                }
+                
+                const allCommits = await response.json();
+                
+                // Filter commits
+                const commits = allCommits.filter(commit => !shouldExcludeCommit(commit));
+                
+                if (commits.length === 0) {
+                    outputContent.textContent = `No commits found in the last ${daysAgo} days matching your filters.`;
+                    outputDiv.classList.add('visible');
+                    return;
+                }
+                
+                window.currentCommits = commits; // Store for AI summary
+                
+                const summary = formatCommitSummary(commits, allCommits.length - commits.length);
+                outputContent.textContent = truncateToTokenLimit(summary);
+                outputDiv.classList.add('visible');
+                
+                // Show AI summary button if API key is present
+                if (document.getElementById('google-api-key').value) {
+                    document.getElementById('ai-summary-btn').style.display = 'inline-flex';
+                }
+                
+            } catch (error) {
+                errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+            }
+        })();
     </script>
 </body>
 </html>
