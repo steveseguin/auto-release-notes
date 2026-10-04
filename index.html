@@ -547,6 +547,28 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
             return text.substring(0, maxChars) + '\n\n[Output truncated to ~' + maxTokens + ' tokens]';
         }
 
+        // Collect the complete date range before filtering or displaying a summary.
+        async function fetchAllCommits(owner, repo, branch, since, headers) {
+            const commits = [];
+            let page = 1;
+            while (true) {
+                const response = await fetch(
+                    `https://api.github.com/repos/${owner}/${repo}/commits?since=${since}&per_page=100&sha=${encodeURIComponent(branch)}&page=${page}`,
+                    { headers }
+                );
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${errorData.message}`);
+                }
+                commits.push(...await response.json());
+                const links = response.headers.get('Link') || '';
+                if (!links.split(',').some(link => /;\s*rel="next"/.test(link))) {
+                    return commits;
+                }
+                page++;
+            }
+        }
+
         async function fetchCommits() {
             const owner = window.GITNFO_OWNER;
             const repo = window.GITNFO_REPO;
@@ -556,6 +578,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
             const outputContent = document.getElementById('output-content');
             const repoInfoDiv = document.getElementById('repo-info');
             
+            window.currentCommits = [];
             errorDiv.style.display = 'none';
             outputDiv.classList.remove('visible');
             document.getElementById('ai-summary').classList.remove('visible');
@@ -578,17 +601,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
             };
             
             try {
-                const response = await fetch(
-                    `https://api.github.com/repos/${owner}/${repo}/commits?since=${since}&per_page=100&sha=${branch}`,
-                    { headers }
-                );
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${errorData.message}`);
-                }
-                
-                const allCommits = await response.json();
+                const allCommits = await fetchAllCommits(owner, repo, branch, since, headers);
                 
                 // Filter commits
                 const commits = allCommits.filter(commit => !shouldExcludeCommit(commit));
@@ -771,6 +784,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
             const outputContent = document.getElementById('output-content');
             const repoInfoDiv = document.getElementById('repo-info');
             
+            window.currentCommits = [];
             errorDiv.style.display = 'none';
             outputDiv.classList.remove('visible');
 
@@ -791,17 +805,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
             };
             
             try {
-                const response = await fetch(
-                    `https://api.github.com/repos/${owner}/${repo}/commits?since=${since}&per_page=100&sha=${branch}`,
-                    { headers }
-                );
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${errorData.message}`);
-                }
-                
-                const allCommits = await response.json();
+                const allCommits = await fetchAllCommits(owner, repo, branch, since, headers);
                 
                 // Filter commits
                 const commits = allCommits.filter(commit => !shouldExcludeCommit(commit));
@@ -831,3 +835,4 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
     </script>
 </body>
 </html>
+
