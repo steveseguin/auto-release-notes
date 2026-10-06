@@ -425,6 +425,8 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
     </div>
 
     <script>
+        let commitFetchVersion = 0;
+
         // Load settings from localStorage
         function loadSettings() {
             const settings = localStorage.getItem('gitnfo-settings');
@@ -548,6 +550,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
         }
 
         async function fetchCommits() {
+            const fetchVersion = ++commitFetchVersion;
             const owner = window.GITNFO_OWNER;
             const repo = window.GITNFO_REPO;
             const branch = window.GITNFO_BRANCH || 'main';
@@ -590,6 +593,8 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 
                 const allCommits = await response.json();
                 
+                if (fetchVersion !== commitFetchVersion) return;
+
                 // Filter commits
                 const commits = allCommits.filter(commit => !shouldExcludeCommit(commit));
                 
@@ -601,7 +606,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 
                 window.currentCommits = commits; // Store for AI summary
                 
-                const summary = formatCommitSummary(commits, allCommits.length - commits.length);
+                const summary = formatCommitSummary(commits, allCommits.length - commits.length, daysAgo);
                 outputContent.textContent = truncateToTokenLimit(summary);
                 outputDiv.classList.add('visible');
                 
@@ -611,12 +616,13 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 }
                 
             } catch (error) {
+                if (fetchVersion !== commitFetchVersion) return;
                 errorDiv.textContent = `Error: ${error.message}`;
                 errorDiv.style.display = 'block';
             }
         }
 
-        function formatCommitSummary(commits, filteredCount) {
+        function formatCommitSummary(commits, filteredCount, daysAgo = getDaysAgo()) {
             const features = [];
             const fixes = [];
             const other = [];
@@ -637,7 +643,6 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 }
             });
             
-            const daysAgo = getDaysAgo();
             let output = `# Updates from the last ${daysAgo} days (${commits.length} commits${filteredCount > 0 ? ', ' + filteredCount + ' filtered' : ''})\n\n`;
             
             if (features.length > 0) {
@@ -763,6 +768,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
         
         // Auto-fetch on page load
         (async () => {
+            const fetchVersion = ++commitFetchVersion;
             const owner = window.GITNFO_OWNER;
             const repo = window.GITNFO_REPO;
             const branch = window.GITNFO_BRANCH || 'main';
@@ -803,6 +809,8 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 
                 const allCommits = await response.json();
                 
+                if (fetchVersion !== commitFetchVersion) return;
+
                 // Filter commits
                 const commits = allCommits.filter(commit => !shouldExcludeCommit(commit));
                 
@@ -814,7 +822,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 
                 window.currentCommits = commits; // Store for AI summary
                 
-                const summary = formatCommitSummary(commits, allCommits.length - commits.length);
+                const summary = formatCommitSummary(commits, allCommits.length - commits.length, daysAgo);
                 outputContent.textContent = truncateToTokenLimit(summary);
                 outputDiv.classList.add('visible');
                 
@@ -824,6 +832,7 @@ git log --since="2 weeks ago" --pretty=format:"%an|%s|%b" | sort | awk -F'|' '{
                 }
                 
             } catch (error) {
+                if (fetchVersion !== commitFetchVersion) return;
                 errorDiv.textContent = `Error: ${error.message}`;
                 errorDiv.style.display = 'block';
             }
